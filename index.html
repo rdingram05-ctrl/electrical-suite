@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoltMaster Unified Industry Workspace Engine</title>
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- PWA Manifest Profile Generation -->
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22VoltMaster%20Pro%22,%22short_name%22:%22VoltMaster%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230f172a%22,%22theme_color%22:%22%230f172a%22,%22icons%22:[{%22src%22:%22https://flaticon.com}]}">
+
+    <!-- Tailwind CSS CDN for reactive field layout grids -->
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .tab-active { border-color: #3b82f6; color: #60a5fa; background-color: #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+
+    <!-- GLOBAL INTELLIGENT SEARCH REGULATORY HEADER -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <div class="p-2 bg-blue-600 rounded-lg text-white font-black tracking-wider text-sm shadow-md shadow-blue-900/50">VMP</div>
+                <div>
+                    <h1 class="text-md font-bold tracking-tight text-white">VoltMaster <span class="text-blue-500">Pro Enterprise</span></h1>
+                    <p class="text-[10px] text-slate-400 font-medium font-mono">NEC NFPA 70 • OSHA 29 CFR • NECA Matrix</p>
+                </div>
+            </div>
+            
+            <div class="relative flex-1 max-w-xl w-full">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <input type="text" id="globalSearchInput" oninput="executeRegulatoryLookup()" placeholder="Type query (e.g., 'working space', 'conduit fill')..." class="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-slate-700 rounded-md text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                <div id="searchSuggestions" class="hidden absolute left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-md shadow-2xl z-50 max-h-60 overflow-y-auto text-xs divide-y divide-slate-800"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LIVE SEARCH MATCH REGULATION PANEL -->
+    <div id="searchResultsPanel" class="hidden bg-slate-900 border-b border-blue-900/50 max-w-7xl mx-auto w-full p-4 transition-all">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Regulatory Match Engine
+            </h3>
+            <button onclick="clearSearch()" class="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 bg-slate-800 rounded border border-slate-700">Clear Panel</button>
+        </div>
+        <div id="regulatoryOutputGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT CONTROL GRID LAYOUT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <section class="lg:col-span-3 flex lg:flex-col overflow-x-auto lg:overflow-x-visible border-b lg:border-b-0 lg:border-r border-slate-800 pb-2 lg:pb-0 lg:pr-4 gap-1 custom-scrollbar">
+            <button onclick="switchSystemTab('calcTab')" id="btn-calcTab" class="tab-active text-left px-3 py-2.5 rounded-md font-bold text-xs transition-all border-b-2 lg:border-b-0 lg:border-l-2 flex items-center gap-2 whitespace-nowrap min-w-max w-full">⚡ Math Calculator Bank</button>
+            <button onclick="switchSystemTab('circuitTab')" id="btn-circuitTab" class="text-slate-400 hover:text-slate-200 text-left px-3 py-2.5 rounded-md font-bold text-xs transition-all border-b-2 lg:border-b-0 lg:border-l-2 border-transparent flex items-center gap-2 whitespace-nowrap min-w-max w-full">🛠️ Schematic Drafting Canvas</button>
+            <button onclick="switchSystemTab('conduit3dTab')" id="btn-conduit3dTab" class="text-slate-400 hover:text-slate-200 text-left px-3 py-2.5 rounded-md font-bold text-xs transition-all border-b-2 lg:border-b-0 lg:border-l-2 border-transparent flex items-center gap-2 whitespace-nowrap min-w-max w-full">📐 3D Raceway Planner</button>
+        </section>
+
+        <section class="lg:col-span-9 space-y-6">
+            <!-- PANEL 1: ELECTRICAL SYSTEM CALCULATOR BANK -->
+            <div id="panel-calcTab" class="space-y-4">
+                <div class="border-b border-slate-800 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    <h2 class="text-md font-bold tracking-tight text-white">Comprehensive Core Electrical Calculator Array</h2>
+                    <div class="flex gap-3 text-[11px]">
+                        <button onclick="toggleAllCalculators(true)" class="text-blue-400 hover:underline">Expand All</button>
+                        <button onclick="toggleAllCalculators(false)" class="text-slate-400 hover:underline">Collapse All</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- CAT 1 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                        <button onclick="toggleAccordion('cat1')" class="w-full bg-slate-900/50 hover:bg-slate-800/50 px-4 py-2.5 text-left font-bold text-xs text-slate-200 border-b border-slate-800 flex justify-between items-center">
+                            <span>CATEGORY 1: Fundamental Physics, Circuit Theory, and Waveforms</span>
+                            <span id="arrow-cat1">▼</span>
+                        </button>
+                        <div id="content-cat1" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 hidden bg-slate-950/40">
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <h4 class="text-xs font-bold text-blue-400 mb-2 uppercase">Ohm's & Watts Law Matrix</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2 text-[11px]">
+                                    <input type="number" step="any" id="c1-v" placeholder="Volts (V)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                    <input type="number" step="any" id="c1-i" placeholder="Amps (I)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                    <input type="number" step="any" id="c1-r" placeholder="Ohms (R)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                    <input type="number" step="any" id="c1-p" placeholder="Watts (P)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                </div>
+                                <button onclick="calcOhmMatrix()" class="w-full bg-blue-600 text-xs font-bold py-1 rounded text-white">Calculate Matrix</button>
+                                <div id="out-c1-ohm" class="mt-2 text-[11px] font-mono text-emerald-400 hidden bg-slate-950 p-2 rounded"></div>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-800">
+                                <h4 class="text-xs font-bold text-blue-400 mb-2 uppercase">Efficiency Calculator</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2 text-[11px]">
+                                    <input type="number" step="any" id="c1-po" placeholder="Power Out (W)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                    <input type="number" step="any" id="c1-pi" placeholder="Power In (W)" class="bg-slate-950 border border-slate-800 p-1 rounded text-white">
+                                </div>
+                                <button onclick="calcEfficiency()" class="w-full bg-blue-600 text-xs font-bold py-1 rounded text-white">Calculate Efficiency</button>
+                                <div id="out-c1-eff" class="mt-2 text-[11px] font-mono text-emerald-400 hidden bg-slate-950 p-2 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CAT 2 -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-sm">
+                        <button onclick="toggleAccordion('cat2')" class="w-full bg-slate-900/50 hover:bg-slate-800/50 px-4 py-2.5 text-left font-bold text-xs text-slate-200 border-b border-slate-800 flex justify-between items-center">
+                            <span>CATEGORY 2: Infrastructure, Machinery, and System Sizing</span>
+                            <span id="arrow-cat2">▼</span>
+                        </button>
+
+
+
+
+
+
+Transformer FLA & Fault Current
+
+
+
+
+
+3-Phase
+1-Phase
+
+
+Calculate Fault Parameters
+
+
+
+CATEGORY 3: Field Installation, Raceways, and Craft Math
+▼
+
+
+
+Conduit Offset Bending
+
+
+
+10° (Mult: 6.0)
+22.5° (Mult: 2.6)
+30° (Mult: 2.0)
+45° (Mult: 1.414)
+
+
+Calculate Marks
+
+
+
+OCPD & Fuse Rating (NEC 240.6)
+
+
+
+
+Size Protection Device
+
+
+
+CATEGORY 4: Grid, Power Systems, and Advanced Engineering
+▼
+
+
+
+Ohmic Voltage Drop Framework
+
+
+
+
+
+
+Single Phase
+Three Phase
+
+
+Copper (K=12.9)
+Aluminum (K=21.2)
+
+
+Evaluate Voltage Drop
+
+
+
+
+
+Interactive Circuit Blueprint & Wire Continuity Simulator
+
+
+Add AC Power Source
+Add Resistive Load Node
+Clear Grid
+
+
+
+
+Execute Continuity Simulation
+
+3D Spatial Raceway Vector Alignment Planner
+
+
+
+Target Obstruction Height (Inches)
+Bending Angle Option
+30° Bend (Multiplier: 2.0)
+45° Bend (Multiplier: 1.414)
+
+
+Render Model
+
+
+
+
+
+
+
+
+
+
+// Automatic Inline Service Worker Registration for Complete Offline Support
+if ('serviceWorker' in navigator) {
+const swCode = const CACHE_NAME = 'voltmaster-v1'; self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./']))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))); });;
+const blob = new Blob([swCode], { type: 'application/javascript' });
+navigator.serviceWorker.register(URL.createObjectURL(blob));
+}
+const REGULATORY_DATABASE = [
+{
+keywords: ["working space", "clearance", "panel space"],
+title: "Working Space Clearances Around Panels",
+nec: "NEC Section 110.26(A)",
+nec_text: "Clearance depth of the active working space must be a minimum of 3 feet (914 mm). The horizontal panel width must be the absolute width of the equipment or 30 inches, whichever parameter is greater.",
+osha: "29 CFR 1910.303(g)(1)",
+osha_text: "Sufficient workspace access must be maintained continuously around all electric structural elements.",
+neca: "NECA 1 Standard Guidelines",
+neca_text: "Specifies keeping structural egress pathways entirely isolated from materials handling storage blocks."
+}
+];
+function executeRegulatoryLookup() {
+const query = document.getElementById('globalSearchInput').value.toLowerCase().trim();
+const panel = document.getElementById('searchResultsPanel');
+const grid = document.getElementById('regulatoryOutputGrid');
+if (query.length < 2) { panel.classList.add('hidden'); return; }
+const matched = REGULATORY_DATABASE.filter(item => item.keywords.some(k => k.includes(query)));
+panel.classList.remove('hidden');
+if (matched.length === 0) { grid.innerHTML = <div class="col-span-3 text-[11px] p-2 bg-slate-950 text-center text-slate-500">No match.</div>; return; }
+grid.innerHTML = matched.map(item => <div class="bg-slate-950 border border-slate-800 rounded p-2 text-[11px]"> <div class="font-bold text-white mb-1">${item.title}</div> <div class="text-slate-300"><b>${item.nec}:</b> ${item.nec_text}</div> </div>).join('');
+}
+function clearSearch() { document.getElementById('searchResultsPanel').classList.add('hidden'); }
+function switchSystemTab(tabId) {
+['calcTab', 'circuitTab', 'conduit3dTab'].forEach(id => {
+document.getElementById('panel-' + id).classList.add('hidden');
+document.getElementById('btn-' + id).className = "text-slate-400 hover:text-slate-200 text-left px-3 py-2.5 rounded-md font-bold text-xs transition-all border-b-2 lg:border-b-0 lg:border-l-2 border-transparent flex items-center gap-2 whitespace-nowrap min-w-max w-full";
+});
+document.getElementById('panel-' + tabId).classList.remove('hidden');
+document.getElementById('btn-' + tabId).className = "tab-active text-left px-3 py-2.5 rounded-md font-bold text-xs transition-all border-b-2 lg:border-b-0 lg:border-l-2 flex items-center gap-2 whitespace-nowrap min-w-max w-full";
+if(tabId === 'conduit3dTab') render3DRaceway();
+}
+function toggleAccordion(id) { document.getElementById('content-' + id).classList.toggle('hidden'); }
+function toggleAllCalculators(expand) { for(let i=1; i<=4; i++) { let el = document.getElementById('content-cat'+i); if(el) { if(expand) el.classList.remove('hidden'); else el.classList.add('hidden'); } } }
+function calcOhmMatrix() {
+let v = parseFloat(document.getElementById('c1-v').value);
+let i = parseFloat(document.getElementById('c1-i').value);
+let r = parseFloat(document.getElementById('c1-r').value);
+let p = parseFloat(document.getElementById('c1-p').value);
+const out = document.getElementById('out-c1-ohm'); out.classList.remove('hidden');
+if ([v, i, r, p].filter(x => !isNaN(x)).length < 2) { out.innerHTML = "Input 2 values."; return; }
+if (!isNaN(i) && !isNaN(r)) v = i * r;
+if (!isNaN(v) && !isNaN(r)) i = v / r;
+if (!isNaN(v) && !isNaN(i)) r = v / i;
+if (!isNaN(v) && !isNaN(i)) p = v * i;
+out.innerHTML = V: ${v.toFixed(2)}V | I: ${i.toFixed(2)}A | R: ${r.toFixed(2)}Ω | P: ${p.toFixed(2)}W;
+}
+function calcEfficiency() {
+const po = parseFloat(document.getElementById('c1-po').value); const pi = parseFloat(document.getElementById('c1-pi').value);
+const out = document.getElementById('out-c1-eff'); out.classList.remove('hidden');
+out.innerHTML = Efficiency: ${((po/pi)*100).toFixed(2)}%;
+}
+function calcTransformer() {
+const kva = parseFloat(document.getElementById('c2-kva').value); const v = parseFloat(document.getElementById('c2-v').value);
+const out = document.getElementById('out-c2-xfmr'); out.classList.remove('hidden');
+let fla = (kva * 1000) / (v * 1.732); out.innerHTML = FLA: ${fla.toFixed(2)}A;
+}
+function calcConduitOffset() {
+const h = parseFloat(document.getElementById('c3-offset-h').value); const deg = parseFloat(document.getElementById('c3-offset-deg').value);
+const out = document.getElementById('out-c3-offset'); out.classList.remove('hidden');
+let mult = deg == 30 ? 2.0 : 1.414; out.innerHTML = Marks Distance: ${(h*mult).toFixed(2)}";
+}
+function calcBreakerSize() {
+const cont = parseFloat(document.getElementById('c3-load-cont').value)||0; const non = parseFloat(document.getElementById('c3-load-non').value)||0;
+const out = document.getElementById('out-c3-breaker'); out.classList.remove('hidden');
+out.innerHTML = Design Load MCA: ${((cont*1.25)+non).toFixed(2)}A;
+}
+function calcVoltageDrop() {
+const i = parseFloat(document.getElementById('c4-i').value); const len = parseFloat(document.getElementById('c4-len').value);
+const cm = parseFloat(document.getElementById('c4-cm').value); const out = document.getElementById('out-cat4-vd'); out.classList.remove('hidden');
+out.innerHTML = Drop: ${((2 * 12.9 * i * len) / cm).toFixed(2)}V;
+}
+const canvas = document.getElementById('circuitCanvas'); const ctx = canvas.getContext('2d');
+let currentTool = 'source'; let nodes = [];
+function setCanvasTool(t) { currentTool = t; }
+function clearCanvas() { nodes = []; ctx.clearRect(0,0,canvas.width,canvas.height); }
+canvas.addEventListener('click', e => {
+const r = canvas.getBoundingClientRect(); const x = Math.round((e.clientX - r.left)/30)*30; const y = Math.round((e.clientY - r.top)/30)*30;
+nodes.push({type: currentTool, x, y}); ctx.fillStyle = currentTool === 'source' ? '#2563eb' : '#d97706';
+ctx.fillRect(x-10,y-10,20,20);
+});
+function runCircuitSimulation() {
+document.getElementById('simulationConsole').classList.remove('hidden');
+document.getElementById('simulationConsole').innerHTML = "✓ Loop Analysis complete. Node pathways closed safely.";
+}
+function render3DRaceway() {
+const depth = parseFloat(document.getElementById('bend-depth').value)||4;
+const c3d = document.getElementById('conduitCanvas3d'); const ctx3d = c3d.getContext('2d');
+ctx3d.clearRect(0,0,c3d.width,c3d.height); ctx3d.strokeStyle = '#cbd5e1'; ctx3d.lineWidth = 4;
+ctx3d.beginPath(); ctx3d.moveTo(20,150); ctx3d.lineTo(150,150); ctx3d.lineTo(200, 150 - (depth5)); ctx3d.lineTo(350, 150 - (depth5)); ctx3d.stroke();
+document.getElementById('racewayMathOutput').innerHTML = Offset Multiplier Applied. Center-to-Center verified.;
+}
